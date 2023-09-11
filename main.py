@@ -1,8 +1,18 @@
-from module import Module
+from interceptor.module import Module
 import interceptor.database as db
 import os
 
+ASCII_ART = """
+.___        __               .__                              
+|   | _____/  |_  ___________|  |   ____ ______   ___________ 
+|   |/    \   __\/ __ \_  __ \  |  /  _ \\\\____ \_/ __ \_  __ \\
+|   |   |  \  | \  ___/|  | \/  |_(  <_> )  |_> >  ___/|  | \/
+|___|___|  /__|  \___  >__|  |____/\____/|   __/ \___  >__|   
+         \/          \/                  |__|        \/       
+"""
+
 def main():
+    print(ASCII_ART)
     setup_needed = not os.path.isfile("interceptor.db")
     db_conn = db.open()
     if setup_needed:
