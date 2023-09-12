@@ -1,8 +1,10 @@
 """This module adds a host to the Interceptor database"""
 import interceptor.database as db
+import interceptor.io as io
+import interceptor.formatting as fmt
 
-def run(host_ipv4_addr: str, host_ipv6_addr: str = "", host_mac_addr: str = "") -> bool:
+def run(ipv4_addr: str, ipv6_addr: str = "", mac_addr: str = "") -> bool:
     conn = db.open()
-    host_id = db.add_host(conn, host_ipv4_addr, host_ipv6_addr, host_mac_addr)
-    print(f"Added host with id {host_id}")
+    host_id = db.add_host(conn, ipv4_addr, ipv6_addr, mac_addr)
+    io.write(fmt.info(f"Added host with id {host_id}"))
     return True

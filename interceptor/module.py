@@ -1,13 +1,13 @@
+import interceptor.io as io
+import interceptor.formatting as fmt
 import inspect
+import importlib
 from types import ModuleType
 from typing import Callable
 
 def _import_module_by_name(name: str):
     name = f"modules.{name}"
-    module = __import__(name)
-    submodules = name.split('.')
-    for sub in submodules[1:]:
-        module = getattr(module, sub)
+    module: ModuleType = importlib.import_module(name)
     return module
 
 class Module:
@@ -22,30 +22,40 @@ class Module:
                 .values()
             )
         self._set_args: dict[inspect.Parameter] = {}
+        self._running: bool = False
 
+    @property
+    def running(self) -> bool:
+        return self._running
+    
     @property
     def name(self) -> str:
         return self._name
     
-    def info(self) -> str:
-        info_text: str = f"{self._name}\n"
-        info_text += f"{self._info}\n"
-        info_text += "Options:\n"
-        for arg in self._run_args:
-            info_text += f"{arg.name} ({arg.annotation.__name__}): "
-            if arg in self._set_args:
-                info_text += str(self._set_args[arg])
-            elif arg.default != inspect.Parameter.empty:
-                info_text += arg.default
-            info_text += "\n"
-        return info_text
+    def info(self) -> dict:
+        return {
+            "name": self._name,
+            "description": self._info,
+            "args": [
+                {
+                    "name": arg.name,
+                    "type": arg.annotation.__name__,
+                    "value": self._set_args[arg] if arg in self._set_args \
+                        else arg.default if arg.default != inspect.Parameter.empty \
+                        else None
+                } for arg in self._run_args
+            ]
+        }
+        
 
     def run(self) -> bool:
         if any(filter(lambda arg: arg.default == inspect.Parameter.empty and arg not in self._set_args, self._run_args)):
-            print("Error: One of more required options is not set.")
-            return False
+            raise Exception("One of more required options is not set.")
         args = tuple(self._set_args[arg] if arg in self._set_args else arg.default for arg in self._run_args)
-        return self._run_func(*args)
+        self._running = True
+        res: bool = self._run_func(*args)
+        self._running = False
+        return res 
     
     def set(self, arg_name: str, value):
         arg_fltr = list(filter(lambda a: a.name == arg_name, self._run_args))

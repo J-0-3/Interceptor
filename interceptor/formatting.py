@@ -30,3 +30,13 @@ def cyan(text: str) -> str:
     return f"\u001b[36m{text}\u001b[39m"
 def white(text: str) -> str:
     return f"\u001b[37m{text}\u001b[39m"
+def info(text: str) -> str:
+    return f"{bold('[.]')} {text}"
+def error(text: str) -> str:
+    return red(f"{bold('[E]')} {text}")
+def warn(text: str) -> str:
+    return yellow(f"{bold('[!]')} {text}")
+def success(text: str) -> str:
+    return green(bold('[\u2713]') + f' {text}')
+def verbose(text: str) -> str:
+    return f"{dim(bold('[V]'))} {dim(text)}"
