@@ -1,19 +1,21 @@
-from interceptor.application.core import CoreApplication
-from interceptor.application.terminal import TerminalApplication
-import interceptor.application.api as api
-import sys
+from interceptor.internal.core import CoreApplication
+from terminal import TerminalApplication
+import api as api
+import interceptor.formatting as fmt
+import threading
+import time
 
-def api_main():
+def main():
+    print(fmt.info("Connecting to database..."))
     core = CoreApplication()
-    api.run(core)
-
-def terminal_main():
-    core = CoreApplication()
-    app = TerminalApplication(core)
+    print(fmt.info("Starting REST API..."))
+    api_thread = threading.Thread(target = api.run, args=(core,))
+    api_thread.start()
+    print(fmt.success(f"API listening on {fmt.bold('http://127.0.0.1:8080/')}"))
+    print(fmt.info("Starting terminal application..."))
+    time.sleep(1)
+    app = TerminalApplication()
     app.run()
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "--api":
-        api_main()
-    else:
-        terminal_main()
+    main()

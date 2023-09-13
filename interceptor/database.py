@@ -10,7 +10,7 @@ def setup(conn: sqlite3.Connection):
     cur.execute("CREATE TABLE credentials (id INTEGER NOT NULL PRIMARY KEY, service_id INT, login_name TEXT, credential TEXT)")
     conn.commit()
 
-def add_host(conn: sqlite3.Connection, ipv4_addr: str, ipv6_addr: str, mac_addr: str):
+def add_host(conn: sqlite3.Connection, ipv4_addr: str = "", ipv6_addr: str = "", mac_addr: str = ""):
     cur = conn.cursor()
     cur.execute("INSERT INTO hosts (ipv4, ipv6, mac) VALUES (?, ?, ?)", (ipv4_addr, ipv6_addr, mac_addr))
     conn.commit()
@@ -28,6 +28,16 @@ def add_credential(conn: sqlite3.Connection, service_id: int, login_name: str, c
     conn.commit()
     return cur.lastrowid
 
+def set_host(conn: sqlite3.Connection, id: int, ipv4_addr = None, ipv6_addr: str = None, mac_addr: str = None):
+    cur = conn.cursor()
+    if ipv4_addr:
+        cur.execute("UPDATE hosts SET ipv4 = ? WHERE id = ?", (ipv4_addr, id))
+    if ipv6_addr:
+        cur.execute("UPDATE hosts SET ipv6 = ? WHERE id = ?", (ipv6_addr, id))
+    if mac_addr:
+        cur.execute("UPDATE hosts SET mac =? WHERE id = ?", (mac_addr, id))
+    conn.commit()
+    
 class _Host:
     def __init__(self, id, ipv4, ipv6, mac):
         self.id = id
@@ -43,7 +53,31 @@ def get_all_hosts(conn: sqlite3.Connection):
     res = cur.fetchall()
     return [_Host(*r) for r in res]
 
-def get_host(conn:sqlite3.Connection, id: int):
+def search_hosts(conn: sqlite3.Connection, ipv4_addr: str = None, ipv6_addr: str = None, mac_addr: str = None):
+    query = "SELECT id, ipv4, ipv6, mac FROM hosts WHERE "
+    if ipv4_addr:
+        query += "ipv4 = ?"
+        if ipv6_addr or mac_addr:
+            query += " AND "
+    if ipv6_addr:
+        query += "ipv6 = ?"
+        if mac_addr:
+            query += " AND "
+    if mac_addr:
+        query += "mac = ?"
+    args = ()
+    if ipv4_addr:
+        args += (ipv4_addr,)
+    if ipv6_addr:
+        args += (ipv6_addr,)
+    if mac_addr:
+        args += (mac_addr,)
+    cur = conn.cursor()
+    cur.execute(query, args)
+    res = cur.fetchall()
+    return [_Host(*r) for r in res]
+
+def get_host(conn: sqlite3.Connection, id: int):
     cur = conn.cursor()
     cur.execute("SELECT ipv4, ipv6, mac FROM hosts WHERE id = ?", (id,))
     res = cur.fetchone()
