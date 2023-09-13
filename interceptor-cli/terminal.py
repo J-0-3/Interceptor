@@ -1,4 +1,4 @@
-import interceptor.formatting as fmt
+import formatting as fmt
 import requests
 
 _ASCII_ART = """
