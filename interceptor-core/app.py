@@ -2,12 +2,7 @@ from interceptor.internal.core import CoreApplication
 from flask import Flask, request
 
 _api = Flask("interceptor-api")
-_application: CoreApplication = None
-
-def run(application: CoreApplication):
-    global _application 
-    _application = application
-    _api.run("127.0.0.1", 8080, debug=True)
+_application: CoreApplication = CoreApplication()
 
 @_api.route("/hosts")
 def get_hosts():
@@ -115,7 +110,9 @@ def load_module():
 
 @_api.route("/module/info")
 def get_current_module_info():
-    return _application.module_info
+    if _application.current_module_name != None:
+        return _application.module_info
+    return ("No module loaded", 404)
 
 @_api.route("/set", methods=["POST"])
 def set_argument():
@@ -152,6 +149,3 @@ def run_module():
     _application.start_module()
     return ("Started task", 200)
 
-if __name__ == "__main__":
-    core = CoreApplication()
-    run(core)

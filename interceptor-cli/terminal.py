@@ -43,9 +43,10 @@ class TerminalApplication:
     def run(self):
         self._running = True
         self._display_banner()
-        loaded_module = requests.get(f"{self._api_url}/module/info").json()
-        if "name" in loaded_module:
-            self._current_module = loaded_module["name"]
+        res = requests.get(f"{self._api_url}/module/info")
+        if res.status_code == 200:
+            module_info = res.json()
+            self._current_module = module_info["name"]
         self._main_loop()
 
     def _display_banner(self):

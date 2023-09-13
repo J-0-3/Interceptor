@@ -18,7 +18,7 @@ def send_l2(data: bytes, interface: Interface = None):
     return pylibpcap.send_packet(interface.name, data)
 
 def _recv_thread(interface: Interface, filter: str, count: int, pkt_queue: multiprocessing.Queue):
-    for length, time, pkt_raw in pylibpcap.sniff(interface.name, filter=filter, count = count):
+    for length, time, pkt_raw in pylibpcap.sniff(interface.name, filters=filter, count = count):
         pkt_queue.put(pkt_raw)
 
 class _CapturedPacket:
@@ -26,7 +26,7 @@ class _CapturedPacket:
         self.header = hdr
         self.payload = payload
 
-def recv_l3(count = 1, bpf_filter = None, interface: Interface = None, timeout_s = 0) -> list[_CapturedPacket]:
+def recv_l3(count = 1, bpf_filter: str = None, interface: Interface = None, timeout_s = 0) -> list[_CapturedPacket]:
     if interface is None:
         interface = get_default_interface()
     frames = multiprocessing.Queue()
