@@ -1,5 +1,4 @@
 from interceptor.internal.module import Module
-from sqlite3 import Connection
 from threading import Thread
 import interceptor.database as db
 import interceptor.io as io
@@ -12,10 +11,8 @@ class CoreApplication:
         self._init_db()
 
     def _init_db(self):
-        db_setup = not os.path.isfile("interceptor.db")
         with db.open() as db_conn:
-            if db_setup:
-                db.setup(db_conn)
+            db.setup(db_conn)
 
     @property
     def module_info(self) -> dict:
@@ -106,5 +103,9 @@ class CoreApplication:
         with db.open() as db_conn:
             return db.get_credential(db_conn, cred_id)
     
+    def clear_database(self):
+        with db.open() as db_conn:
+            db.clear(db_conn)
+
     def exit(self):
         pass

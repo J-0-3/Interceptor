@@ -329,3 +329,9 @@ class MACAddress:
     
     def __invert__(self):
         return MACAddress(~self.i48)
+    
+    def __eq__(self, other):
+        if isinstance(other, MACAddress):
+            return self.i48 == other.i48
+        else:
+            return self.i48 == MACAddress(other).i48

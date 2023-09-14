@@ -1,5 +1,4 @@
 import interceptor.io as io
-import interceptor.formatting as fmt
 import inspect
 import importlib
 from types import ModuleType
@@ -42,7 +41,7 @@ class Module:
                     "type": arg.annotation.__name__,
                     "value": str(self._set_args[arg] if arg in self._set_args \
                         else arg.default if arg.default != inspect.Parameter.empty \
-                        else None)
+                        else "")
                 } for arg in self._run_args
             ]
         }

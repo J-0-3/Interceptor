@@ -15,6 +15,21 @@ class EthernetHeader:
     @property
     def raw(self) -> bytes:
         return self._dst.bytestring + self._src.bytestring + self._proto.to_bytes(2, 'big')
+
+    @property
+    def dst(self) -> MACAddress:
+        return self._dst
+    
+    @property
+    def src(self) -> MACAddress:
+        return self._src
+    
+    @property
+    def proto(self) -> int:
+        return self._proto
+    
+    def __str__(self) -> str:
+        return f"{self.src} -> {self.dst} ({hex(self.proto)[2:]})"
     
 def parse_raw_ethernet_header(raw_hdr: bytes) -> EthernetHeader:
     dst = MACAddress(raw_hdr[:6])

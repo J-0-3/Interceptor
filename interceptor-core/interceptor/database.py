@@ -10,6 +10,12 @@ def setup(conn: sqlite3.Connection):
     cur.execute("CREATE TABLE credentials (id INTEGER NOT NULL PRIMARY KEY, service_id INT, login_name TEXT, credential TEXT)")
     conn.commit()
 
+def clear(conn: sqlite3.Connection):
+    cur = conn.cursor()
+    cur.execute("DELETE FROM hosts")
+    cur.execute("DELETE FROM services")
+    cur.execute("DELETE FROM credentials")
+
 def add_host(conn: sqlite3.Connection, ipv4_addr: str = "", ipv6_addr: str = "", mac_addr: str = ""):
     cur = conn.cursor()
     cur.execute("INSERT INTO hosts (ipv4, ipv6, mac) VALUES (?, ?, ?)", (ipv4_addr, ipv6_addr, mac_addr))

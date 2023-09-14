@@ -149,3 +149,7 @@ def run_module():
     _application.start_module()
     return ("Started task", 200)
 
+@_api.route("/db-reset", methods=["POST"])
+def clear_database():
+    _application.clear_database()
+    return ("Database cleared", 200)

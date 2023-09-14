@@ -1,7 +1,7 @@
 """Contains classes for using the Address Resolution Protocol"""
 from interceptor.net.addresses import IPv4Address, MACAddress
+import interceptor.net.packets as pkts
 import interceptor.net.interfaces as ifaces
-from interceptor.net.packets import send_l3
 
 class ARPPacket:
     def __init__(self, operation: int, 
@@ -62,13 +62,35 @@ class ARPPacket:
         pkt_bytes += self._proto_target.bytestring
         return pkt_bytes
     
-    def send(self, dst: MACAddress = "ff:ff:ff:ff:ff:ff", interface: ifaces.Interface = None) -> bool:
-        if interface is None:
+    def send(self,
+             target: MACAddress | int | str | bytes | list[int] | list[bytes] = "ff:ff:ff:ff:ff:ff",
+             interface: ifaces.Interface = None):
+        pkts.send_l3(target, self.raw, 0x0806, interface)
+
+    def send_and_recv(self,
+                      target: MACAddress | int | str | bytes | list[int] | list[bytes] = "ff:ff:ff:ff:ff:ff",
+                      interface: ifaces.Interface = None,
+                      timeout_s: int = 5):
+        
+        def pkt_filter(pkt: pkts._CapturedPacket) -> bool:
+            if pkt.header.dst != interface.mac_addr:
+                return False
+            if pkt.header.proto != 0x0806:
+                return False
             try:
-                interface = ifaces.Interface(self._hw_sender)
-            except:
-                interface = ifaces.get_default_interface()
-        return send_l3(dst, self.raw, 0x0806, interface)
+                arp_data = parse_raw_arp_packet(pkt.payload)
+            except ValueError:
+                return False
+            if arp_data.proto_sender != self.proto_target:
+                return False
+            if arp_data.proto_target != interface.ipv4_addr:
+                return False
+            return True
+        
+        res = pkts.send_and_recv_l3(target, self.raw, 0x0806, pkt_filter, interface, timeout_s=timeout_s)
+        if res is None:
+            return None
+        return parse_raw_arp_packet(res.payload)
     
 def parse_raw_arp_packet(data: bytes) -> ARPPacket:
     if len(data) < 28:
