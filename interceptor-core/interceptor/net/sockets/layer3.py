@@ -8,20 +8,25 @@ from typing import Callable
 import socket
 import time
 
+class HostUnresolvedException(Exception):
+    def __init__(self, host: IPv4Address):
+        super().__init__(f"Cannot resolve host {host.dotted}")
+    
 def l3_send(target: IPv4Address,
             protocol: int,
             payload: bytes,
             interface: Interface = None,
             sender: IPv4Address = None,
+            arp_timeout_s: float = 1,
             sock: socket.socket = None):
     if interface is None:
         interface = get_default_interface()
     if sender is None:
         sender = interface.ipv4_addr
     ip_packet = IPv4Packet(target, protocol, payload, sender)
-    target_mac = resolve_ip_to_mac(target, interface)
+    target_mac = resolve_ip_to_mac(target, interface, timeout_s=arp_timeout_s)
     if target_mac is None:
-        raise RuntimeError("Cannot resolve IP address")
+        raise HostUnresolvedException(target)
     l2_send(target_mac, 0x0800, ip_packet.raw, interface, sock=sock)
 
 def l3_recv(count: int = 1,

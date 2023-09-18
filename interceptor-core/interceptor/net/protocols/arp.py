@@ -15,7 +15,7 @@ def get_arp_table() -> dict[IPv4Address, MACAddress]:
             table[IPv4Address(ip_addr)] = MACAddress(mac_addr)
     return table 
 
-def resolve_ip_to_mac(ip_address: IPv4Address, interface: Interface = None) -> MACAddress | None:
+def resolve_ip_to_mac(ip_address: IPv4Address, interface: Interface = None, timeout_s: float = 5) -> MACAddress | None:
     db_conn = db.open()
     q_results = db.search_hosts(db_conn, ipv4_addr=ip_address)
     if len(q_results) > 0 and q_results[0].mac is not None:
@@ -24,7 +24,7 @@ def resolve_ip_to_mac(ip_address: IPv4Address, interface: Interface = None) -> M
     if ip_address in arp_table:
         return arp_table[ip_address]
     arp_req = ARPPacket(1, ip_address)
-    res = arp_req.send_and_recv(interface=interface)
+    res = arp_req.send_and_recv(interface=interface, timeout_s=timeout_s)
     if res:
         return res.hw_sender
     return None

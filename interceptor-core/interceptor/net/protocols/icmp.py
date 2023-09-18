@@ -112,7 +112,7 @@ class ICMPPacket:
             return True
 
         sock = open_socket(interface)
-        l3_send(target, IPPROTO_ICMP, self.raw, interface, sock = sock)
+        l3_send(target, IPPROTO_ICMP, self.raw, interface, sock = sock, arp_timeout_s=timeout_s)
         res = l3_recv(filter_func=pkt_filter, interface=interface, timeout_s=timeout_s, sock=sock)
         if res is not None:
             res = parse_raw_icmp_packet(res[2].payload)
