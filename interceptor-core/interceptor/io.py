@@ -1,19 +1,22 @@
-import inspect
+import threading
 from queue import Queue
 
 _IO_QUEUES: dict[str, Queue] = {}
 
-def create(module_name: str):
-    _IO_QUEUES[module_name] = Queue()
+def create():
+    _IO_QUEUES[threading.get_ident()] = Queue()
 
 def write(text: str):
-    calling_module = inspect.currentframe().f_back.f_globals['__name__'].split('.', 1)[1]
-    _IO_QUEUES[calling_module].put(text)
+    thread_id = threading.get_ident()
+    _IO_QUEUES[thread_id].put(text)
 
-def available(module: str) -> bool:
-    if module not in _IO_QUEUES:
+def available(thread_id: int) -> bool:
+    if thread_id not in _IO_QUEUES:
         return False
-    return not _IO_QUEUES[module].empty()
+    return not _IO_QUEUES[thread_id].empty()
 
-def read(module: str) -> str:
-    return _IO_QUEUES[module].get()
+def read(thread_id: int) -> str:
+    return _IO_QUEUES[thread_id].get()
+
+def add_thread(parent_thread_id: int, child_thread_id: int):
+    _IO_QUEUES[child_thread_id] = _IO_QUEUES[parent_thread_id]

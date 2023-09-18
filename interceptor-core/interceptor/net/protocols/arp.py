@@ -1,7 +1,33 @@
 """Contains classes for using the Address Resolution Protocol"""
 from interceptor.net.addresses import IPv4Address, MACAddress
-import interceptor.net.packets as pkts
-import interceptor.net.interfaces as ifaces
+from interceptor.net.interfaces import Interface, get_default_interface
+from interceptor.net.protocols.ethernet import EthernetFrame
+from interceptor.net.sockets.layer1 import open_socket
+from interceptor.net.sockets.layer2 import l2_send, l2_recv
+import interceptor.db as db
+
+def get_arp_table() -> dict[IPv4Address, MACAddress]:
+    with open("/proc/net/arp", 'r') as file:
+        entries = file.readlines()[1:]
+        table = {}
+        for line in entries:
+            ip_addr, _, _, mac_addr, _, _ = line.split()
+            table[IPv4Address(ip_addr)] = MACAddress(mac_addr)
+    return table 
+
+def resolve_ip_to_mac(ip_address: IPv4Address, interface: Interface = None) -> MACAddress | None:
+    db_conn = db.open()
+    q_results = db.search_hosts(db_conn, ipv4_addr=ip_address)
+    if len(q_results) > 0 and q_results[0].mac is not None:
+        return q_results[0].mac
+    arp_table = get_arp_table()
+    if ip_address in arp_table:
+        return arp_table[ip_address]
+    arp_req = ARPPacket(1, ip_address)
+    res = arp_req.send_and_recv(interface=interface)
+    if res:
+        return res.hw_sender
+    return None
 
 class ARPPacket:
     def __init__(self, operation: int, 
@@ -19,9 +45,9 @@ class ARPPacket:
         else:
             self._hw_target: MACAddress = MACAddress(hw_target)
         if proto_sender is None:
-            proto_sender: IPv4Address = ifaces.get_default_interface().ipv4_addr
+            proto_sender: IPv4Address = get_default_interface().ipv4_addr
         if hw_sender is None:
-            hw_sender: MACAddress = ifaces.Interface(proto_sender).mac_addr
+            hw_sender: MACAddress = Interface(proto_sender).mac_addr
         if isinstance(proto_sender, IPv4Address):
             self._proto_sender: IPv4Address = proto_sender
         else:
@@ -64,21 +90,22 @@ class ARPPacket:
     
     def send(self,
              target: MACAddress | int | str | bytes | list[int] | list[bytes] = "ff:ff:ff:ff:ff:ff",
-             interface: ifaces.Interface = None):
-        pkts.send_l3(target, self.raw, 0x0806, interface)
+             interface: Interface = None,
+             spoof_mac: MACAddress = None):
+        l2_send(target, 0x0806, self.raw, interface, spoof_mac)
 
     def send_and_recv(self,
                       target: MACAddress | int | str | bytes | list[int] | list[bytes] = "ff:ff:ff:ff:ff:ff",
-                      interface: ifaces.Interface = None,
-                      timeout_s: int = 5):
+                      interface: Interface = None,
+                      timeout_s: float = 5.0):
         
-        def pkt_filter(pkt: pkts._CapturedPacket) -> bool:
-            if pkt.header.dst != interface.mac_addr:
+        def pkt_filter(raw: bytes, frame: EthernetFrame) -> bool:
+            if frame.dst != interface.mac_addr:
                 return False
-            if pkt.header.proto != 0x0806:
+            if frame.proto != 0x0806:
                 return False
             try:
-                arp_data = parse_raw_arp_packet(pkt.payload)
+                arp_data = parse_raw_arp_packet(frame.payload)
             except ValueError:
                 return False
             if arp_data.proto_sender != self.proto_target:
@@ -87,10 +114,13 @@ class ARPPacket:
                 return False
             return True
         
-        res = pkts.send_and_recv_l3(target, self.raw, 0x0806, pkt_filter, interface, timeout_s=timeout_s)
+        sock = open_socket(interface)
+        l2_send(target, 0x0806, self.raw, interface, sock=sock)
+        res = l2_recv(filter_func=pkt_filter, interface=interface, timeout_s=timeout_s, sock=sock)
         if res is None:
             return None
-        return parse_raw_arp_packet(res.payload)
+        raw, frame = res
+        return parse_raw_arp_packet(frame.payload)
     
 def parse_raw_arp_packet(data: bytes) -> ARPPacket:
     if len(data) < 28:

@@ -22,7 +22,7 @@ class IPv4Address:
         elif isinstance(addr, list) and all(map(lambda x: isinstance(x, bytes), addr)):
             self._octets: list[int] = list(map(int, addr))
         else:
-            raise Exception("Required argument not set")
+            raise TypeError("Cannot convert to IPv4Address")
         
     @property
     def dotted(self) -> str:
@@ -120,6 +120,9 @@ class IPv4Address:
     def __iter__(self) -> list[int]:
         return self._octets
     
+    def __hash__(self) -> int:
+        return hash(self.i32)
+
     def __and__(self, other):
         if isinstance(other, IPv4Address):
             other_int = other.i32
@@ -189,6 +192,16 @@ def cidr_range(cidr: str) -> list[IPv4Address]:
     brdcast_ip = addr | ~subnet_mask
     return [IPv4Address(a) for a in range(subnet_id.i32 + 1, brdcast_ip.i32)]
 
+def ip_range(range_str: str) -> list[IPv4Address]:
+    """
+    Gets all the IP addresses in a range between two addresses ("a.b.c.d-e.f.g.h") (includes start and end)
+
+    Args:
+        range (str): The range denoted by two addresses separated by a '-'
+    """
+    start, end = map(IPv4Address, range_str.split("-"))
+    return [IPv4Address(a) for a in range(start.i32, end.i32 + 1)]
+
 class MACAddress:
     """
     Represents a Media Access Control address.
@@ -206,16 +219,18 @@ class MACAddress:
                 self._octets: list[int] = list(map(lambda i: int(i, 16), addr.split(':')))
             elif '-' in addr:
                 self._octets: list[int] = list(map(lambda i: int(i, 16), addr.split('-')))
+            else:
+                raise TypeError("Invalid MAC address")
         elif isinstance(addr, int):
             self._octets: list[int] = [(addr & (0xff << s)) >> s for s in range(0, 48, 8)]
         elif isinstance(addr, bytes):
             self._octets: list[int] = list(addr)
         elif isinstance(addr, list) and all(map(lambda x: isinstance(x, int), addr)):
             self._octets: list[int] = addr
-        elif isinstance(addr, bytes) and all(map(lambda x: isinstance(x, bytes), addr)):
+        elif isinstance(addr, list) and all(map(lambda x: isinstance(x, bytes), addr)):
             self._octets: list[int] = list(map(int, addr))
         else:
-            raise Exception("Cannot convert type to MAC address")
+            raise TypeError("Invalid type")
     
     @property
     def colon(self) -> str:
@@ -335,3 +350,6 @@ class MACAddress:
             return self.i48 == other.i48
         else:
             return self.i48 == MACAddress(other).i48
+    
+    def __hash__(self) -> int:
+        return hash(self.i48)

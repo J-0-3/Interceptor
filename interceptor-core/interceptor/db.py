@@ -1,3 +1,4 @@
+from interceptor.net.addresses import IPv4Address, MACAddress
 import sqlite3
 
 def open() -> sqlite3.Connection:
@@ -16,8 +17,14 @@ def clear(conn: sqlite3.Connection):
     cur.execute("DELETE FROM services")
     cur.execute("DELETE FROM credentials")
 
-def add_host(conn: sqlite3.Connection, ipv4_addr: str = "", ipv6_addr: str = "", mac_addr: str = ""):
+def add_host(conn: sqlite3.Connection, ipv4_addr: IPv4Address = None, ipv6_addr: str = None, mac_addr: MACAddress = None):
     cur = conn.cursor()
+    if ipv4_addr is not None:
+        ipv4_addr = str(ipv4_addr)
+    if ipv6_addr is not None:
+        ipv6_addr = str(ipv6_addr)
+    if mac_addr is not None:
+        mac_addr = str(mac_addr)
     cur.execute("INSERT INTO hosts (ipv4, ipv6, mac) VALUES (?, ?, ?)", (ipv4_addr, ipv6_addr, mac_addr))
     conn.commit()
     return cur.lastrowid
@@ -34,24 +41,24 @@ def add_credential(conn: sqlite3.Connection, service_id: int, login_name: str, c
     conn.commit()
     return cur.lastrowid
 
-def set_host(conn: sqlite3.Connection, id: int, ipv4_addr = None, ipv6_addr: str = None, mac_addr: str = None):
+def set_host(conn: sqlite3.Connection, id: int, ipv4_addr: IPv4Address = None, ipv6_addr: str = None, mac_addr: MACAddress = None):
     cur = conn.cursor()
     if ipv4_addr:
-        cur.execute("UPDATE hosts SET ipv4 = ? WHERE id = ?", (ipv4_addr, id))
+        cur.execute("UPDATE hosts SET ipv4 = ? WHERE id = ?", (str(ipv4_addr), id))
     if ipv6_addr:
-        cur.execute("UPDATE hosts SET ipv6 = ? WHERE id = ?", (ipv6_addr, id))
+        cur.execute("UPDATE hosts SET ipv6 = ? WHERE id = ?", (str(ipv6_addr), id))
     if mac_addr:
-        cur.execute("UPDATE hosts SET mac =? WHERE id = ?", (mac_addr, id))
+        cur.execute("UPDATE hosts SET mac =? WHERE id = ?", (str(mac_addr), id))
     conn.commit()
     
 class _Host:
-    def __init__(self, id, ipv4, ipv6, mac):
+    def __init__(self, id: int, ipv4: IPv4Address | None, ipv6: str | None, mac: MACAddress | None):
         self.id = id
         self.ipv4 = ipv4
         self.ipv6 = ipv6
         self.mac = mac
     def __str__(self) -> str:
-        return f"ID: {self.id}\n\tIPv4: {self.ipv4}\n\tIPv6: {self.ipv6}\n\tMAC: {self.mac}"
+        return f"ID: {self.id}\n\tIPv4: {str(self.ipv4)}\n\tIPv6: {str(self.ipv6)}\n\tMAC: {str(self.mac)}"
 
 def get_all_hosts(conn: sqlite3.Connection):
     cur = conn.cursor()
@@ -59,7 +66,7 @@ def get_all_hosts(conn: sqlite3.Connection):
     res = cur.fetchall()
     return [_Host(*r) for r in res]
 
-def search_hosts(conn: sqlite3.Connection, ipv4_addr: str = None, ipv6_addr: str = None, mac_addr: str = None):
+def search_hosts(conn: sqlite3.Connection, ipv4_addr: IPv4Address | None = None, ipv6_addr: str | None = None, mac_addr: MACAddress | None = None):
     query = "SELECT id, ipv4, ipv6, mac FROM hosts WHERE "
     if ipv4_addr:
         query += "ipv4 = ?"
@@ -73,11 +80,11 @@ def search_hosts(conn: sqlite3.Connection, ipv4_addr: str = None, ipv6_addr: str
         query += "mac = ?"
     args = ()
     if ipv4_addr:
-        args += (ipv4_addr,)
+        args += (str(ipv4_addr),)
     if ipv6_addr:
-        args += (ipv6_addr,)
+        args += (str(ipv6_addr),)
     if mac_addr:
-        args += (mac_addr,)
+        args += (str(mac_addr),)
     cur = conn.cursor()
     cur.execute(query, args)
     res = cur.fetchall()

@@ -1,34 +1,23 @@
 from interceptor.internal.module import Module
 from threading import Thread
-import interceptor.database as db
+import interceptor.net.interfaces as ifaces
+import interceptor.db as db
 import interceptor.io as io
 import os
 
 class CoreApplication:
     def __init__(self):
-        self._current_module: Module = None
         self._tasks: dict[str, Thread] = {}
         self._init_db()
 
     def _init_db(self):
-        with db.open() as db_conn:
-            db.setup(db_conn)
+        if not os.path.isfile("interceptor.db"):
+            with db.open() as db_conn:    
+                db.setup(db_conn)
 
-    @property
-    def module_info(self) -> dict:
-        if self._current_module:
-            return self._current_module.info()
-        return {}
-    
-    @property
-    def current_module_name(self) -> str:
-        if self._current_module:
-            return self._current_module.name
-        else:
-            return None
-        
-    def load_module(self, module_name: str):
-        self._current_module = Module(module_name)
+    def get_module_info(self, module_name: str) -> dict:
+        module = Module(module_name)
+        return module.info
         
     def list_modules(self, category: str = "") -> list[str]:
         cur_root = f"modules/{category.replace('.', '/')}"
@@ -43,22 +32,29 @@ class CoreApplication:
             mod_list += self.list_modules(f"{category}{'.' if category else ''}{dir}")
         return mod_list
     
-    def start_module(self):
-        if self._current_module:
-            io.create(self._current_module.name)
-            task_thread = Thread(target = self._current_module.run)
-            task_thread.start()
-            self._tasks[self._current_module.name] = task_thread
-
+    def start_module(self, module_name: str, module_args: dict) -> str:
+        module = Module(module_name)
+        for name, value in module_args.items():
+            module.set(name, value)
+        task_thread = Thread(target=module.run)
+        task_thread.start()
+        task_name = module_name
+        suffix = 1
+        while task_name in self._tasks:
+            task_name = f"{task_name}_{suffix}"
+            suffix += 1
+        self._tasks[task_name] = (task_thread, module)
+        return task_name
+        
     def get_tasks(self):
         return list(self._tasks.keys())
     
     def get_task_status(self, task_name: str) -> dict:
         if task_name in self._tasks:
-            thread = self._tasks[task_name]
+            thread = self._tasks[task_name][0]
             output = ""
-            while io.available(task_name):
-                output += f"{io.read(task_name)}\n"
+            while io.available(thread.ident):
+                output += f"{io.read(thread.ident)}\n"
             if not thread.is_alive():
                 self._tasks.pop(task_name)
             return {
@@ -67,18 +63,16 @@ class CoreApplication:
             }
         else:
             raise ValueError("No such task")
-        
-        
-    def set_option(self, arg_name: str, value):
-        if self._current_module:
-            self._current_module.set(arg_name, value)
     
-    @property
-    def module_running(self) -> bool:
-        if self._current_module:
-            return self._current_module.running
-        return False
-    
+    def stop_task(self, task_name: str):
+        if task_name in self._tasks:
+            _, module = self._tasks[task_name]
+            module.stop()
+            
+
+    def get_interfaces(self) -> list[ifaces.Interface]:
+        return ifaces.get_interfaces()
+        
     def list_hosts(self) -> list[db._Host]:
         with db.open() as db_conn:
             return db.get_all_hosts(db_conn)

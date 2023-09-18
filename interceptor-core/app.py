@@ -47,7 +47,7 @@ def get_credentials():
         ]
     }
 
-@_api.route("/host/<id>")
+@_api.route("/hosts/<id>")
 def get_host(id):
     host = _application.get_host(id)
     return {
@@ -59,7 +59,7 @@ def get_host(id):
         }
     }
 
-@_api.route("/service/<id>")
+@_api.route("/services/<id>")
 def get_service(id):
     service = _application.get_service(id)
     return {
@@ -72,7 +72,7 @@ def get_service(id):
         }
     }
 
-@_api.route("/credential/<id>")
+@_api.route("/credentials/<id>")
 def get_credential(id):
     cred = _application.get_credential(id)
     return {
@@ -99,27 +99,13 @@ def get_modules():
         ]
     }
 
-@_api.route("/module/load", methods=["POST"])
-def load_module():
-    module = request.form.get("module")
+@_api.route("/modules/<module>")
+def get_module_info(module: str):
     try:
-        _application.load_module(module)
+        info = _application.get_module_info(module)
     except ModuleNotFoundError:
-        return ("Module not found", 404)
-    return ("Module loaded", 200)
-
-@_api.route("/module/info")
-def get_current_module_info():
-    if _application.current_module_name != None:
-        return _application.module_info
-    return ("No module loaded", 404)
-
-@_api.route("/set", methods=["POST"])
-def set_argument():
-    name = request.form.get("name")
-    value = request.form.get("value")
-    _application.set_option(name, value)
-    return ("Module loaded", 200)
+        return ("No such module", 404)
+    return info
 
 @_api.route("/tasks")
 def get_tasks():
@@ -132,7 +118,7 @@ def get_tasks():
         ]
     }
 
-@_api.route("/task/<task>")
+@_api.route("/tasks/<task>")
 def get_task(task):
     try:
         status = _application.get_task_status(task)
@@ -144,10 +130,37 @@ def get_task(task):
     except ValueError:
         return ("Task not found", 404)
 
-@_api.route("/run", methods=["POST"])
-def run_module():
-    _application.start_module()
-    return ("Started task", 200)
+@_api.route("/tasks/<task>/stop", methods=["POST"])
+def stop_task(task):
+    try:
+        _application.stop_task(task)
+    except ValueError:
+        return ("Task not found", 404)
+    return ("Task stopping", 200)
+    
+@_api.route("/modules/<module>/start", methods=["POST"])
+def run_module(module: str):
+    args = request.form
+    try:
+        task_name = _application.start_module(module, args)
+    except ModuleNotFoundError:
+        return ("No such module", 404)
+    except TypeError:
+        return ("Bad argument type", 400)
+    return (task_name, 200)
+
+@_api.route("/interfaces")
+def get_interfaces():
+    interfaces = _application.get_interfaces()
+    return {
+        "interfaces": [
+            {
+                "name": iface.name,
+                "ipv4": str(iface.ipv4_addr),
+                "mac": str(iface.mac_addr)
+            } for iface in interfaces
+        ]
+    }
 
 @_api.route("/db-reset", methods=["POST"])
 def clear_database():

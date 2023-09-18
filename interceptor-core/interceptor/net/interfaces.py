@@ -63,7 +63,7 @@ class Interface:
                         self._name = if_name
                         if netifaces.AF_INET in if_info:
                             ipv4_addr = if_info[netifaces.AF_INET][0]['addr']
-                            self._ipv4_addr = IPv4Address(mac_addr)
+                            self._ipv4_addr = IPv4Address(ipv4_addr)
             if self._name is None:
                 raise Exception("No such interface exists.")
             
@@ -93,6 +93,9 @@ class Interface:
     def __str__(self) -> str:
         return f"{self._name} (MAC = {self._mac_addr}, IPv4 = {self.ipv4_addr})"
     
+    def __hash__(self) -> int:
+        return hash((self._name, self._ipv4_addr, self._mac_addr))
+    
 def get_default_gateway_addr(proto = netifaces.AF_INET) -> IPv4Address:
     default_gateways = netifaces.gateways()['default']
     if proto in default_gateways:
@@ -104,3 +107,6 @@ def get_default_interface(proto = netifaces.AF_INET) -> Interface | None:
     if proto in default_gateways:
         _, if_name = default_gateways[proto]
         return Interface(if_name)
+
+def get_interfaces() -> list[Interface]:
+    return [Interface(i) for i in netifaces.interfaces()]
