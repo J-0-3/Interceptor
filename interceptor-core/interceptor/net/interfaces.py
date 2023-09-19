@@ -20,6 +20,8 @@ class Interface:
         self._name: str | None = None
         self._ipv4_addr: IPv4Address | None = None
         self._mac_addr: IPv4Address | None = None 
+        self._ipv4_netmask: IPv4Address | None = None
+        self._ipv4_broadcast: IPv4Address | None = None
         if isinstance(iface, IPv4Address):
             self._ipv4_addr = iface
         elif isinstance(iface, MACAddress):
@@ -42,6 +44,9 @@ class Interface:
             if netifaces.AF_INET in if_info:
                 inet_info = if_info[netifaces.AF_INET][0]
                 self._ipv4_addr = IPv4Address(inet_info['addr'])
+                if 'broadcast' in inet_info:
+                    self._ipv4_broadcast = IPv4Address(inet_info['broadcast'])
+                self._ipv4_netmask = IPv4Address(inet_info['netmask'])
         elif self._ipv4_addr:
             if_names = netifaces.interfaces()
             for if_name in if_names:
@@ -49,6 +54,9 @@ class Interface:
                 if netifaces.AF_INET in if_info:
                     if any(map(lambda i: i['addr'] == str(self._ipv4_addr), if_info[netifaces.AF_INET])):
                         self._name = if_name
+                        if 'broadcast' in if_info[netifaces.AF_INET][0]:
+                            self._ipv4_broadcast = IPv4Address(if_info[netifaces.AF_INET][0]['broadcast'])
+                        self._ipv4_netmask = IPv4Address(if_info[netifaces.AF_INET][0]['netmask'])
                         if netifaces.AF_LINK in if_info:
                             mac_addr = if_info[netifaces.AF_LINK][0]['addr']
                             self._mac_addr = MACAddress(mac_addr)
@@ -64,9 +72,11 @@ class Interface:
                         if netifaces.AF_INET in if_info:
                             ipv4_addr = if_info[netifaces.AF_INET][0]['addr']
                             self._ipv4_addr = IPv4Address(ipv4_addr)
+                            if 'broadcast' in if_info[netifaces.AF_INET][0]:
+                                self._ipv4_broadcast = IPv4Address(if_info[netifaces.AF_INET][0]['broadcast'])
+                            self._ipv4_netmask = IPv4Address(if_info[netifaces.AF_INET][0]['netmask'])
             if self._name is None:
                 raise Exception("No such interface exists.")
-            
 
     @property
     def mac_addr(self) -> MACAddress | None:
@@ -90,6 +100,19 @@ class Interface:
         """
         return self._ipv4_addr
 
+    @property
+    def ipv4_broadcast(self) -> IPv4Address | None:
+        """
+        The IPv4 broadcast address of the interface.
+        """
+        return self._ipv4_broadcast
+    
+    @property
+    def ipv4_netmask(self) -> IPv4Address | None:
+        """
+        The IPv4 subnet mask of the interface
+        """
+        return self._ipv4_netmask
     def __str__(self) -> str:
         return f"{self._name} (MAC = {self._mac_addr}, IPv4 = {self.ipv4_addr})"
     

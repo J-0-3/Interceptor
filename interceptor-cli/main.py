@@ -271,7 +271,6 @@ class TerminalApplication:
             print(f"\tHost ID: {service['host_id']}")
             print(f"\tTransport Protocol: {service['transport_protocol']}")
             print(f"\tPort: {service['port']}")
-            print(f"\tService: {service['service']}")
     
     def _show_service(self, *args):
         if len(args) < 1:
@@ -285,7 +284,6 @@ class TerminalApplication:
             print(f"\tHost ID: {service['host_id']}")
             print(f"\tTransport Protocol: {service['transport_protocol']}")
             print(f"\tPort: {service['port']}")
-            print(f"\tService: {service['service']}")
     
     def _list_creds(self, *_):
         for cred in requests.get(f"{self._api_url}/credentials").json()["credentials"]:

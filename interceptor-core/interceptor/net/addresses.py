@@ -73,7 +73,7 @@ class IPv4Address:
         """
         Whether the IP address is within a private IP range.
         """
-        return any(lambda r: self >= r[0] and self <= r[1] for r in [
+        return any(self >= r[0] and self <= r[1] for r in [
             ("10.0.0.0", "10.255.255.255"),
             ("172.16.0.0", "172.31.255.255"),
             ("192.168.0.0", "192.168.255.255")
@@ -106,7 +106,6 @@ class IPv4Address:
         Whether the IP address is in the research range (class E).
         """
         return self.ip_class == "E"
-
 
     def __str__(self) -> str:
         return self.dotted

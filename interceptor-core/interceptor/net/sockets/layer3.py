@@ -18,12 +18,18 @@ def l3_send(target: IPv4Address,
             interface: Interface = None,
             sender: IPv4Address = None,
             arp_timeout_s: float = 1,
-            sock: socket.socket = None):
+            sock: socket.socket = None,
+            dscp: int = 0,
+            ecn: int = 0,
+            ttl: int = 64,
+            identification: int = -1,
+            flags: int = 2,
+            frag_offset: int = 0):
     if interface is None:
         interface = get_default_interface()
     if sender is None:
         sender = interface.ipv4_addr
-    ip_packet = IPv4Packet(target, protocol, payload, sender)
+    ip_packet = IPv4Packet(target, protocol, payload, sender, dscp, ecn, ttl, identification, flags, frag_offset)
     target_mac = resolve_ip_to_mac(target, interface, timeout_s=arp_timeout_s)
     if target_mac is None:
         raise HostUnresolvedException(target)
@@ -33,7 +39,7 @@ def l3_recv(count: int = 1,
             filter_func: Callable[[bytes, EthernetFrame, IPv4Packet], bool] = lambda r, f, p: True, 
             interface: Interface = None,
             timeout_s: float = 5,
-            sock: socket.socket = None) -> tuple[bytes, EthernetFrame, IPv4Address] | list[tuple[bytes, EthernetFrame, IPv4Address]] | None:
+            sock: socket.socket = None) -> tuple[bytes, EthernetFrame, IPv4Packet] | list[tuple[bytes, EthernetFrame, IPv4Packet]] | None:
     if interface is None:
         interface = get_default_interface()
     packets = []

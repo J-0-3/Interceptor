@@ -13,13 +13,13 @@ def _lookup_thread_func(ip_addr, timeout, interface):
     if reply is None:
         io.write(f"No reply from {ip_addr}")
     else:
-        mac_addr = reply.hw_sender
+        mac_addr = reply.hwsrc
         io.write(f"{ip_addr} is live at {mac_addr}.")
-        db_records = db.search_hosts(db_conn, ipv4_addr=ip_addr)
-        if len(db_records) == 0:
+        db_host = db.search_hosts(db_conn, ipv4_addr=ip_addr)
+        if db_host is None:
             db.add_host(db_conn, ipv4_addr=ip_addr, mac_addr=mac_addr)
         else:
-            db.set_host(db_conn, db_records[0].id, mac_addr=mac_addr)
+            db.set_host(db_conn, db_host.id, mac_addr=mac_addr)
     db_conn.close()
 
 class Module:

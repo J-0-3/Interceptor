@@ -27,8 +27,7 @@ def get_services():
                 "id": service.id,
                 "host_id": service.host_id,
                 "transport_protocol": service.transport_protocol,
-                "port": service.port,
-                "service": service.service
+                "port": service.port
             } for service in services
         ]
     }
@@ -62,13 +61,14 @@ def get_host(id):
 @_api.route("/services/<id>")
 def get_service(id):
     service = _application.get_service(id)
+    if service is None:
+        return ("No such service", 404)
     return {
         "service": {
             "id": id,
             "host_id": service.host_id,
             "transport_protocol": service.transport_protocol,
-            "port": service.port,
-            "service": service.service
+            "port": service.port
         }
     }
 

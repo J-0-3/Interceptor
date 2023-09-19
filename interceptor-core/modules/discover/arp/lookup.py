@@ -26,7 +26,7 @@ class Module:
             io.write("No ARP response received.")
             return False
         io.write("Received ARP response.")
-        result_mac = resp.hw_sender
+        result_mac = resp.hwsrc
         io.write(f"MAC Address: {result_mac}")
         db.set_host(db_conn, host.id, mac_addr=result_mac)
         return True

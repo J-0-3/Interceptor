@@ -7,7 +7,7 @@ def open() -> sqlite3.Connection:
 def setup(conn: sqlite3.Connection):
     cur = conn.cursor()
     cur.execute("CREATE TABLE hosts (id INTEGER NOT NULL PRIMARY KEY , ipv4 TEXT, ipv6 TEXT, mac TEXT)")
-    cur.execute("CREATE TABLE services (id INTEGER NOT NULL PRIMARY KEY, host_id INT, transport_protocol TEXT, port INT, service TEXT)")
+    cur.execute("CREATE TABLE services (id INTEGER NOT NULL PRIMARY KEY, host_id INT, transport_protocol TEXT, port INT)")
     cur.execute("CREATE TABLE credentials (id INTEGER NOT NULL PRIMARY KEY, service_id INT, login_name TEXT, credential TEXT)")
     conn.commit()
 
@@ -29,9 +29,9 @@ def add_host(conn: sqlite3.Connection, ipv4_addr: IPv4Address = None, ipv6_addr:
     conn.commit()
     return cur.lastrowid
 
-def add_service(conn: sqlite3.Connection, host_id: int, transport_protocol: str, port: int, service: str):
+def add_service(conn: sqlite3.Connection, host_id: int, transport_protocol: str, port: int):
     cur = conn.cursor()
-    cur.execute("INSERT INTO services (host_id, transport_protocol, port, service) VALUES (?, ?, ?, ?)", (host_id, transport_protocol, port, service))
+    cur.execute("INSERT INTO services (host_id, transport_protocol, port) VALUES (?, ?, ?)", (host_id, transport_protocol, port))
     conn.commit()
     return cur.lastrowid
 
@@ -87,8 +87,8 @@ def search_hosts(conn: sqlite3.Connection, ipv4_addr: IPv4Address | None = None,
         args += (str(mac_addr),)
     cur = conn.cursor()
     cur.execute(query, args)
-    res = cur.fetchall()
-    return [_Host(*r) for r in res]
+    res = cur.fetchone()
+    return _Host(*res) if res else None
 
 def get_host(conn: sqlite3.Connection, id: int):
     cur = conn.cursor()
@@ -122,14 +122,13 @@ def get_credential(conn: sqlite3.Connection, id: int):
     return _Credential(id, *res)
 
 class _Service:
-    def __init__(self, id: int, host_id: int, transport_protocol: str, port: int, service: str):
+    def __init__(self, id: int, host_id: int, transport_protocol: str, port: int):
         self.id = id
         self.host_id = host_id
         self.transport_protocol = transport_protocol
         self.port = port
-        self.service = service
     def __str__(self) -> str:
-        return f"ID: {self.id}\n\tHost ID: {self.host_id}\n\tTransport Protocol: {self.transport_protocol}\n\tPort: {self.port}\n\tService: {self.service}"
+        return f"ID: {self.id}\n\tHost ID: {self.host_id}\n\tTransport Protocol: {self.transport_protocol}\n\tPort: {self.port}"
 
 def get_all_services(conn: sqlite3.Connection):
     cur = conn.cursor()
@@ -139,8 +138,32 @@ def get_all_services(conn: sqlite3.Connection):
 
 def get_service(conn: sqlite3.Connection, id: int):
     cur = conn.cursor()
-    cur.execute("SELECT host_id, transport_protocol, port, service FROM services WHERE id = ?", (id, ))
+    cur.execute("SELECT host_id, transport_protocol, port FROM services WHERE id = ?", (id, ))
     res = cur.fetchone()
     if res is None:
         return None
     return _Service(id, *res)
+
+def search_services(conn: sqlite3.Connection, host_id: int = None, transport_protocol: str = None, port: int = None):
+    query = "SELECT id, host_id, transport_protocol, port FROM services WHERE "
+    if host_id:
+        query += "host_id = ?"
+        if transport_protocol or port:
+            query += " AND "
+    if transport_protocol:
+        query += "transport_protocol = ?"
+        if port:
+            query += " AND "
+    if port:
+        query += "port = ?"
+    args = ()
+    if host_id:
+        args += (host_id,)
+    if transport_protocol:
+        args += (transport_protocol,)
+    if port:
+        args += (port,)
+    cur = conn.cursor()
+    cur.execute(query, args)
+    res = cur.fetchone()
+    return _Service(*res) if res else None

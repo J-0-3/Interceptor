@@ -16,7 +16,7 @@ def _ping_thread_f(ip, timeout, interface):
         resp = None
     if resp is not None:
         io.write(f"Received ECHO REPLY from {str(ip)}")
-        if len(db.search_hosts(db_conn, ipv4_addr=ip)) == 0:
+        if db.search_hosts(db_conn, ipv4_addr=ip) is None:
             db.add_host(db_conn, ipv4_addr=ip)
     else:
         io.write(f"No reply from {str(ip)}")

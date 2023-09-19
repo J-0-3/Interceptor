@@ -1,7 +1,7 @@
 import threading
 from queue import Queue
 
-_IO_QUEUES: dict[str, Queue] = {}
+_IO_QUEUES: dict[str, Queue[str]] = {}
 
 def create():
     _IO_QUEUES[threading.get_ident()] = Queue()

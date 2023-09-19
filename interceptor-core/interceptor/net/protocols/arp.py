@@ -17,75 +17,81 @@ def get_arp_table() -> dict[IPv4Address, MACAddress]:
 
 def resolve_ip_to_mac(ip_address: IPv4Address, interface: Interface = None, timeout_s: float = 5) -> MACAddress | None:
     db_conn = db.open()
-    q_results = db.search_hosts(db_conn, ipv4_addr=ip_address)
-    if len(q_results) > 0 and q_results[0].mac is not None:
-        return q_results[0].mac
+    q_result = db.search_hosts(db_conn, ipv4_addr=ip_address)
+    if q_result is not None and q_result.mac is not None:
+        return q_result.mac
     arp_table = get_arp_table()
     if ip_address in arp_table:
         return arp_table[ip_address]
     arp_req = ARPPacket(1, ip_address)
     res = arp_req.send_and_recv(interface=interface, timeout_s=timeout_s)
     if res:
-        return res.hw_sender
+        if q_result is not None:
+            db.set_host(db_conn, q_result.id, mac_addr=res.hwsrc)
+        return res.hwsrc
     return None
 
 class ARPPacket:
     def __init__(self, operation: int, 
-                proto_target: IPv4Address | str | int | bytes | list[int] | list[bytes],
-                hw_target: MACAddress | str | int | bytes | list[int] | list[bytes] = "00:00:00:00:00:00",
-                proto_sender: IPv4Address | str | int | bytes | list[int] | list[bytes] = None,
-                hw_sender: MACAddress | str | int | bytes | list[int] | list[bytes] = None):
+                pdst: IPv4Address | str | int | bytes | list[int] | list[bytes],
+                hwdst: MACAddress | str | int | bytes | list[int] | list[bytes] = "00:00:00:00:00:00",
+                psrc: IPv4Address | str | int | bytes | list[int] | list[bytes] = None,
+                hwsrc: MACAddress | str | int | bytes | list[int] | list[bytes] = None):
         self._operation: int = operation
-        if isinstance(proto_target, IPv4Address):
-            self._proto_target: IPv4Address = proto_target
+        if isinstance(pdst, IPv4Address):
+            self._pdst: IPv4Address = pdst
         else:
-            self._proto_target: IPv4Address = IPv4Address(proto_target)
-        if isinstance(hw_target, MACAddress):
-            self._hw_target: MACAddress = hw_target
+            self._pdst: IPv4Address = IPv4Address(pdst)
+        if isinstance(hwdst, MACAddress):
+            self._hwdst: MACAddress = hwdst
         else:
-            self._hw_target: MACAddress = MACAddress(hw_target)
-        if proto_sender is None:
-            proto_sender: IPv4Address = get_default_interface().ipv4_addr
-        if hw_sender is None:
-            hw_sender: MACAddress = Interface(proto_sender).mac_addr
-        if isinstance(proto_sender, IPv4Address):
-            self._proto_sender: IPv4Address = proto_sender
+            self._hwdst: MACAddress = MACAddress(hwdst)
+        if psrc is None:
+            psrc: IPv4Address = get_default_interface().ipv4_addr
+        if hwsrc is None:
+            hwsrc: MACAddress = Interface(psrc).mac_addr
+        if isinstance(psrc, IPv4Address):
+            self._psrc: IPv4Address = psrc
         else:
-            self._proto_sender: IPv4Address = IPv4Address(proto_sender)
-        if isinstance(hw_sender, MACAddress):
-            self._hw_sender: MACAddress = hw_sender
+            self._psrc: IPv4Address = IPv4Address(psrc)
+        if isinstance(hwsrc, MACAddress):
+            self._hwsrc: MACAddress = hwsrc
         else:
-            self._hw_sender: MACAddress = MACAddress(hw_sender)
+            self._hwsrc: MACAddress = MACAddress(hwsrc)
         self._hw_type: int = 1
         self._ptype: int = 0x0800
 
     @property
-    def proto_target(self) -> IPv4Address:
-        return self._proto_target
+    def pdst(self) -> IPv4Address:
+        return self._pdst
     
     @property
-    def hw_target(self) -> MACAddress:
-        return self._hw_target
+    def hwdst(self) -> MACAddress:
+        return self._hwdst
     
     @property
-    def proto_sender(self) -> IPv4Address:
-        return self._proto_sender
+    def psrc(self) -> IPv4Address:
+        return self._psrc
     
     @property
-    def hw_sender(self) -> MACAddress:
-        return self._hw_sender
+    def hwsrc(self) -> MACAddress:
+        return self._hwsrc
+    
+    @property
+    def opcode(self) -> int:
+        return self._operation
     
     @property
     def raw(self) -> bytes:
         pkt_bytes = self._hw_type.to_bytes(2, 'big')
         pkt_bytes += self._ptype.to_bytes(2, 'big')
-        pkt_bytes += len(self._hw_target.octets).to_bytes(1, 'big')
-        pkt_bytes += len(self._proto_target.octets).to_bytes(1, 'big')
+        pkt_bytes += len(self._hwdst.octets).to_bytes(1, 'big')
+        pkt_bytes += len(self._psrc.octets).to_bytes(1, 'big')
         pkt_bytes += self._operation.to_bytes(2, 'big')
-        pkt_bytes += self._hw_sender.bytestring
-        pkt_bytes += self._proto_sender.bytestring
-        pkt_bytes += self._hw_target.bytestring
-        pkt_bytes += self._proto_target.bytestring
+        pkt_bytes += self._hwsrc.bytestring
+        pkt_bytes += self._psrc.bytestring
+        pkt_bytes += self._hwdst.bytestring
+        pkt_bytes += self._pdst.bytestring
         return pkt_bytes
     
     def send(self,
@@ -108,9 +114,9 @@ class ARPPacket:
                 arp_data = parse_raw_arp_packet(frame.payload)
             except ValueError:
                 return False
-            if arp_data.proto_sender != self.proto_target:
+            if arp_data.psrc != self.pdst:
                 return False
-            if arp_data.proto_target != interface.ipv4_addr:
+            if arp_data.pdst != interface.ipv4_addr:
                 return False
             return True
         
