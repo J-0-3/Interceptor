@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<head>
+    <script src="js/index.js"></script>
+    <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body onload="renderSideBar();renderDatabaseSideBar();">
+    <header>
+    <h1>Interceptor</h1>
+    </header>    
+
+    <div id="sidebar">
+        <div class="tablist">
+            <button class="tab active", onclick="sidebarTabClick(this);">Modules</button>
+            <button class="tab inactive", onclick="sidebarTabClick(this);">Tasks</button>
+        </div>
+        <div>
+            <ul id="sidebaritems">
+                
+            </ul>
+        </div>
+    </div>
+    <main>
+        <div id="maincontent"></div>
+    </main>
+    <footer>
+        <div id="databasepane">
+            <div id="dbpanesidebar">
+            <div class="tablist">
+                <button class="tab active", onclick="databaseTabClick(this);">Hosts</button>
+                <button class="tab inactive", onclick="databaseTabClick(this);">Credentials</button>
+            </div>
+                <ul id="dbpanesidebaritems">
+
+                </ul>
+            </div>
+            <div id="dbview"></div>
+        </div>
+    </footer>
+</body>

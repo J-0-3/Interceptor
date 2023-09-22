@@ -25,18 +25,34 @@ class EthernetFrame:
     def dst(self) -> MACAddress:
         return self._dst
     
+    @dst.setter
+    def dst(self, dst: MACAddress):
+        self._dst = dst
+
     @property
     def payload(self) -> bytes:
         return self._payload
     
+    @payload.setter
+    def payload(self, payload: bytes):
+        self._payload = payload
+
     @property
     def src(self) -> MACAddress:
         return self._src
     
+    @src.setter
+    def src(self, src: MACAddress):
+        self._src = src
+
     @property
     def proto(self) -> int:
         return self._proto
     
+    @proto.setter
+    def proto(self, proto: int):
+        self._proto = proto
+
     def __str__(self) -> str:
         return f"{self.src} -> {self.dst} ({hex(self.proto)[2:]})"
     

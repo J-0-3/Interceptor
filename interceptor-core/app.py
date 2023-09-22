@@ -1,8 +1,16 @@
-from interceptor.internal.core import CoreApplication
+import re
 from flask import Flask, request
+from flask_cors import CORS
+from interceptor.internal.core import CoreApplication
+
 
 _api = Flask("interceptor-api")
+cors = CORS(_api, origins=["http://localhost:*", "http://127.0.0.1:*"])
 _application: CoreApplication = CoreApplication()
+
+@_api.route("/")
+def get_status():
+    return ("Interceptor is running", 200)
 
 @_api.route("/hosts")
 def get_hosts():
@@ -125,7 +133,8 @@ def get_task(task):
         return {
             "name": task,
             "running": status["running"],
-            "output": status["output"]
+            "new_output": status["new_output"],
+            "full_output": status["full_output"]
         }
     except ValueError:
         return ("Task not found", 404)

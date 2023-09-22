@@ -1,0 +1,146 @@
+header {
+    background-color: lightgray;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0px -3px 10px 1px black;
+}
+
+header h1 {
+    padding-left: 10px;
+}
+body {
+    margin-top: 50px;
+    padding-top: 10px;
+}
+
+#sidebaritems {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    padding-top: 2%;
+}
+
+#sidebar {
+    border-style: double;
+    width: 25%;
+    height: 60%;
+    position: fixed;
+    display: block;
+    box-shadow: 0px 0px 5px 1px gray;
+    overflow-y: auto;
+}
+
+.tablist {
+    border-style: none;
+    background-color: lightgrey;
+    display: flex;
+}
+
+.sidebaritem {
+    border: 1px solid lightgray;
+    width: 100%;
+    text-align: left;
+    margin: 0;
+    padding: 5px;
+}
+
+.sidebaritem.active {
+    background-color: lightgray;
+}
+
+.sidebaritem.inactive {
+    background-color: white;
+}
+
+.tab {
+    border: none;
+    margin: 0;
+    padding: 5px;
+    width: 50%;
+}
+
+.tab.inactive {
+    background-color: #f1f1f1;
+}
+
+.tab.active {
+    background-color: white;
+}
+
+#maincontent {
+    margin-left: 27%;
+    border-style: double;
+    height: 59%;
+    position: fixed;
+    width: 70.5%;
+    box-shadow: 0px 0px 5px 1px gray;
+    overflow-y: scroll;
+}
+
+#maincontent {
+    padding-top: 10px;
+    padding-left: 10px;
+}
+
+#contenttitle {
+    text-align: center;
+    border-bottom: 1px dotted gray;
+    padding-bottom: 2%;
+}
+
+#contentdescription {
+    font-size: 16pt;
+}
+
+#dbpanesidebar {
+    position: fixed;
+    margin-top: 62vh;
+    border-style: double;
+    height: 28%;
+    width: 25%;
+    overflow-y: auto;
+}
+
+#dbpanesidebaritems {
+    padding-top: 2px;
+    list-style-type: none;
+    margin-left: 0;
+    padding-left: 0;
+}
+
+#dbview {
+    position: fixed;
+    margin-top: 62vh;
+    border-style: double;
+    margin-left: 27%;
+    height: 28%;
+    width: 71%;
+}
+
+
+@media (prefers-color-scheme: dark) {
+    body {
+        color: white;
+        background-color: black;
+    }
+    header h1 {
+        color: black;
+    }
+
+    .sidebaritem {
+        color: white;
+    }
+    .sidebaritem.active {
+        background-color: gray;
+    }
+
+    .sidebaritem.inactive {
+        background-color: black;
+        color: white;
+    }
+}

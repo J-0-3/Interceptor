@@ -1,9 +1,8 @@
-import interceptor.db as db
-import interceptor.io as io
+from interceptor import db
+from interceptor import io
 
 class Module:
-    """
-    This module adds a credential to the Interceptor database
+    """This module adds a credential to the Interceptor database
     """
     def run(self, service_id: int, login_name: str, credential: str) -> bool:
         conn = db.open()

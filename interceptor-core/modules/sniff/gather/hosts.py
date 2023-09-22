@@ -1,7 +1,6 @@
 from interceptor.net.sockets.layer1 import open_socket
 from interceptor.net.sockets.layer3 import l3_recv
 from interceptor.net.interfaces import Interface, get_default_interface
-from interceptor.net.protocols.ip import parse_raw_ip_packet
 import interceptor.io as io
 import interceptor.db as db
 
@@ -19,7 +18,7 @@ class Module:
             received = l3_recv(interface=interface, sock=sock)
             if received is None:
                 continue
-            raw, frame, pkt = received
+            _, frame, pkt = received
             for mac, ip in ((frame.src, pkt.src), (frame.dst, pkt.dst)):
                 if ip.private and ip != interface.ipv4_broadcast and not ip.multicast:
                     existing_record = db.search_hosts(db_conn, ipv4_addr=ip)

@@ -28,9 +28,10 @@ def l2_recv(count: int = 1,
     start_time = time.perf_counter()
     while time.perf_counter() - start_time < timeout_s and len(frames) < count:
         raw_frame = l1_recv(interface=interface, sock=sock, timeout_s=timeout_s)
-        frame = parse_raw_ethernet_header(raw_frame)
-        if filter_func(raw_frame, frame):
-            frames.append((raw_frame, frame))
+        if raw_frame is not None:
+            frame = parse_raw_ethernet_header(raw_frame)
+            if filter_func(raw_frame, frame):
+                frames.append((raw_frame, frame))
     if count == 1:
         if len(frames) > 0:
             return frames[0]

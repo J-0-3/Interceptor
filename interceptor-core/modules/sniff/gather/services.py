@@ -1,4 +1,4 @@
-from interceptor.net.protocols.tcp import TCPPacket, parse_raw_tcp_packet
+from interceptor.net.protocols.tcp import parse_raw_tcp_packet
 from interceptor.net.sockets.layer1 import open_socket
 from interceptor.net.sockets.layer3 import l3_recv
 from interceptor.net.interfaces import Interface, get_default_interface
@@ -19,7 +19,7 @@ class Module:
             recvd = l3_recv(interface=interface, sock=sock)
             if recvd is None:
                 continue
-            raw, frame, pkt = recvd
+            _, frame, pkt = recvd
             if pkt.src.public:
                 continue
             if pkt.proto == 6:

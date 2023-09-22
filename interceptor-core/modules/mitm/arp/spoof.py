@@ -1,10 +1,10 @@
+import threading
+import random
+import time
 from interceptor.net.interfaces import Interface, get_default_interface
 import interceptor.net.protocols.arp as arp
 import interceptor.db as db
 import interceptor.io as io
-import threading
-import random
-import time
 
 class Module:
     """Performs ARP spoofing to intercept traffic to one or more hosts

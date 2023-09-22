@@ -7,7 +7,7 @@ from interceptor.net.sockets.layer2 import l2_send, l2_recv
 import interceptor.db as db
 
 def get_arp_table() -> dict[IPv4Address, MACAddress]:
-    with open("/proc/net/arp", 'r') as file:
+    with open("/proc/net/arp", 'r', encoding='utf-8') as file:
         entries = file.readlines()[1:]
         table = {}
         for line in entries:
@@ -65,21 +65,41 @@ class ARPPacket:
     def pdst(self) -> IPv4Address:
         return self._pdst
     
+    @pdst.setter
+    def pdst(self, pdst: IPv4Address):
+        self._pdst = pdst
+
     @property
     def hwdst(self) -> MACAddress:
         return self._hwdst
     
+    @hwdst.setter
+    def hwdst(self, hwdst: MACAddress):
+        self._hwdst = hwdst
+
     @property
     def psrc(self) -> IPv4Address:
         return self._psrc
     
+    @psrc.setter
+    def psrc(self, psrc: IPv4Address):
+        self._psrc = psrc
+
     @property
     def hwsrc(self) -> MACAddress:
         return self._hwsrc
     
+    @hwsrc.setter
+    def hwsrc(self, hwsrc: MACAddress):
+        self._hwsrc = hwsrc
+    
     @property
     def opcode(self) -> int:
         return self._operation
+    
+    @opcode.setter
+    def opcode(self, opcode: int):
+        self._operation = opcode
     
     @property
     def raw(self) -> bytes:
@@ -104,7 +124,7 @@ class ARPPacket:
                       target: MACAddress | int | str | bytes | list[int] | list[bytes] = "ff:ff:ff:ff:ff:ff",
                       interface: Interface = None,
                       timeout_s: float = 5.0):
-        
+
         def pkt_filter(raw: bytes, frame: EthernetFrame) -> bool:
             if frame.dst != interface.mac_addr:
                 return False
@@ -119,7 +139,7 @@ class ARPPacket:
             if arp_data.pdst != interface.ipv4_addr:
                 return False
             return True
-        
+
         sock = open_socket(interface)
         l2_send(target, 0x0806, self.raw, interface, sock=sock)
         res = l2_recv(filter_func=pkt_filter, interface=interface, timeout_s=timeout_s, sock=sock)
@@ -127,7 +147,7 @@ class ARPPacket:
             return None
         raw, frame = res
         return parse_raw_arp_packet(frame.payload)
-    
+
 def parse_raw_arp_packet(data: bytes) -> ARPPacket:
     if len(data) < 28:
         raise ValueError("Invalid ARP Packet")

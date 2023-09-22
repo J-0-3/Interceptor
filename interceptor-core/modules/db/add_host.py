@@ -1,10 +1,9 @@
 from interceptor.net.addresses import IPv4Address, MACAddress
-import interceptor.db as db
-import interceptor.io as io
+from interceptor import db
+from interceptor import io
 
 class Module:
-    """
-    This module adds a host to the Interceptor database
+    """This module adds a host to the Interceptor database
     """
     def run(self, ipv4_addr: IPv4Address = None, ipv6_addr: str = None, mac_addr: MACAddress = None) -> bool:
         conn = db.open()

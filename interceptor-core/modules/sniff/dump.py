@@ -5,7 +5,6 @@ from interceptor.net.protocols.tcp import parse_raw_tcp_packet
 from interceptor.net.interfaces import Interface, get_default_interface
 from interceptor.net.filters import compile_filter
 import interceptor.io as io
-import re
 
 class Module:
     """Captures traffic on an interface and optionally write a hexdump to the output.
@@ -13,17 +12,20 @@ class Module:
     def __init__(self):
         self.running = True
 
-    def run(self, interface: Interface = get_default_interface(), hexdump: int = 0, asciidump: int = 0, filter: str = ""):
+    def run(self, interface: Interface = get_default_interface(), hexdump: bool = False, asciidump: bool = False, filter_str: str = None):
         io.write("Opening socket.")
         sock = open_socket(interface)
         try:
-            filter_func = compile_filter(filter)
-        except ValueError as e:
-            io.write(f"Failed to compile filter: {e}")
+            if filter_str is not None:
+                filter_func = compile_filter(filter_str)
+            else:
+                filter_func = lambda f: True
+        except ValueError as exception:
+            io.write(f"Failed to compile filter: {exception}")
             return False
         self.running = True
         while self.running:
-            raw, frame = l2_recv(interface=interface, sock=sock)
+            _, frame = l2_recv(interface=interface, sock=sock)
             if filter_func(frame):
                 io.write(str(frame))
                 if frame.proto == 0x800:

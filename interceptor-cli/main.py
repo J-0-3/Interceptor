@@ -23,6 +23,7 @@ _HELP_TEXT = f"""
 - {fmt.bold("tasks")}: View all running tasks.
 - {fmt.bold("status <task>")}: View the status and previous output of the given task.
 - {fmt.bold("follow <task>")}: Attack to the task and follow its output in real time.
+- {fmt.bold("log <task>")}: View the entire output log of the task since it began.
 - {fmt.bold("stop <task>")}: Stop a currently running task (only applies to certain tasks).
 - {fmt.bold("if")}: Show a list of all available network interfaces.
 - {fmt.bold("hosts")}: Display all hosts stored in the database.
@@ -61,6 +62,7 @@ class TerminalApplication:
             "tasks": self._list_tasks,
             "status": self._print_task_status,
             "follow": self._follow_task,
+            "log": self._print_task_log,
             "stop": self._stop_task,
             "if": self._list_interfaces,
             "hosts": self._list_hosts,
@@ -100,8 +102,8 @@ class TerminalApplication:
         if cmd in self._CMD_FUNCS:
             try:
                 self._CMD_FUNCS[cmd](*args)
-            except Exception as e:
-                print(fmt.error(e))
+            except Exception as exc:
+                print(fmt.error(exc))
         else:
             print(fmt.error(f"Command {cmd} not found."))
 
@@ -148,7 +150,8 @@ class TerminalApplication:
                 if arg['name'] in self._set_args:
                     info_text += self._set_args[arg['name']]
                 else:
-                    info_text += arg['default']
+                    if arg['default'] is not None:
+                        info_text += str(arg['default'])
                 info_text += '\n'
             print(info_text)
         else:
@@ -164,8 +167,8 @@ class TerminalApplication:
                     res = requests.get(f"{self._api_url}/tasks/{task_name}")
                     if res.status_code == 200:
                         status = res.json()
-                        if len(status["output"]) > 0:
-                            print(status["output"], end='')
+                        if len(status["new_output"]) > 0:
+                            print(status["new_output"], end='')
                         running = status["running"]
                     else:
                         print(fmt.error(f"Error {res.status_code}: {res.text}"))
@@ -204,9 +207,19 @@ class TerminalApplication:
         else:
             status = res.json()
             print(f"{fmt.bold('Running')}: {status['running']}")
-            print(fmt.bold(fmt.underline("Output")))
-            print(status["output"])
+            print(fmt.bold(fmt.underline("New Output")))
+            print(status["new_output"])
     
+    def _print_task_log(self, *args):
+        if len(args) < 1:
+            raise ArgumentNotSetException("task")
+        res = requests.get(f"{self._api_url}/tasks/{args[0]}")
+        if res.status_code == 404:
+            print(fmt.error(f"Task {args[0]} not found"))
+        else:
+            status = res.json()
+            print(status["full_output"])
+
     def _follow_task(self, *args):
         if len(args) < 1:
             raise ArgumentNotSetException("task")
@@ -215,8 +228,8 @@ class TerminalApplication:
             res = requests.get(f"{self._api_url}/tasks/{args[0]}")
             if res.status_code == 200:
                 status = res.json()
-                if len(status["output"]) > 0:
-                    print(status['output'], end='')
+                if len(status["new_output"]) > 0:
+                    print(status['new_output'], end='')
                 running = status["running"]
                 time.sleep(0.25)
             elif res.status_code == 404:

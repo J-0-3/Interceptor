@@ -55,11 +55,13 @@ class CoreApplication:
             output = ""
             while io.available(thread.ident):
                 output += f"{io.read(thread.ident)}\n"
+            full_output = io.full_output(thread.ident)
             if not thread.is_alive():
                 self._tasks.pop(task_name)
             return {
                 "running": thread.is_alive(),
-                "output": output 
+                "new_output": output,
+                "full_output": full_output
             }
         else:
             raise ValueError("No such task")

@@ -1,7 +1,7 @@
 import interceptor.io as io
 import inspect
 import importlib
-from types import ModuleType, GenericAlias
+from types import ModuleType, GenericAlias, NoneType
 from typing import Callable
 
 def _import_module_by_name(name: str) -> ModuleType:
@@ -43,17 +43,24 @@ class Module:
     
     @property
     def info(self) -> dict:
+        args = []
+        for arg in self._run_args:
+            if isinstance(arg.default, (str, int, NoneType, float, bool)):
+                def_arg = arg.default
+            elif arg.default == inspect.Parameter.empty:
+                def_arg = None
+            else:
+                def_arg = str(arg.default)
+            args.append({
+                "name": arg.name,
+                "type": _type_to_str(arg.annotation),
+                "required": arg.default == inspect.Parameter.empty,
+                "default": def_arg
+            })
         return {
             "name": self._name,
             "description": self._info,
-            "args": [
-                {
-                    "name": arg.name,
-                    "type": _type_to_str(arg.annotation),
-                    "required": arg.default == inspect.Parameter.empty,
-                    "default": str(arg.default) if arg.default != inspect.Parameter.empty else 'None'
-                } for arg in self._run_args
-            ]
+            "args": args
         }
         
     def run(self) -> bool:
@@ -65,7 +72,7 @@ class Module:
         self._running = True
         res: bool = self._run_func(*args)
         self._running = False
-        return res 
+        return res
     
     def stop(self):
         self._stop_func()
@@ -76,28 +83,35 @@ class Module:
             raise ValueError(f"Argument {arg_name} does not exist.")
         arg: inspect.Parameter = arg_fltr[0]
         arg_type: type | GenericAlias = arg.annotation
-        if type(arg_type) is GenericAlias:
+        if isinstance(arg_type, GenericAlias):
             origin_type: type = arg_type.__origin__
-            if origin_type in [list, tuple]:
+            if value == '':
+                value_casted = None
+            elif origin_type in [list, tuple]:
                 items = origin_type(map(lambda s: s.strip(), value.split(',')))
                 item_type: type = arg_type.__args__[0]
                 try:
                     value_casted = list(map(item_type, items))
-                except TypeError:
-                    raise TypeError(f"Value in list cannot be converted to type {item_type.__name__}")
+                except (TypeError, ValueError) as exc:
+                    raise TypeError(f"Value in list cannot be converted to type {item_type.__name__}") from exc
             else:
                 raise TypeError(f"Unsupported generic type {origin_type.__name__} in function signature")
         else:
+            if value == '':
+                value_casted = None
             try:
-                value_casted = arg_type(value)
-            except TypeError:
-                raise TypeError(f"Value {value} cannot be converted to type {arg_type.__name__}")
+                if isinstance(arg_type, bool):
+                    value_casted = value.lower() == "true"
+                else:
+                    value_casted = arg_type(value)
+            except TypeError as exc:
+                raise TypeError(f"Value {value} cannot be converted to type {arg_type.__name__}") from exc
         self._set_args[arg] = value_casted
     
     def clear(self, arg_name: str):
         arg_fltr = list(filter(lambda a: a.name == arg_name, self._run_args))
         if len(arg_fltr) == 0:
-            raise Exception(f"Argument {arg_name} does not exist.")
+            raise ValueError(f"Argument {arg_name} does not exist.")
         arg: inspect.Parameter = arg_fltr[0]
         try:
             self._set_args.pop(arg)

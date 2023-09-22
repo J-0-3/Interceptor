@@ -113,8 +113,9 @@ class Interface:
         The IPv4 subnet mask of the interface
         """
         return self._ipv4_netmask
+    
     def __str__(self) -> str:
-        return f"{self._name} (MAC = {self._mac_addr}, IPv4 = {self.ipv4_addr})"
+        return self._name
     
     def __hash__(self) -> int:
         return hash((self._name, self._ipv4_addr, self._mac_addr))

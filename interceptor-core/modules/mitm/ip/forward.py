@@ -21,15 +21,15 @@ class Module:
         if allow_filter != "":
             try:
                 filter_func = compile_filter(allow_filter)
-            except ValueError as e:
-                io.write(f"Cannot compile allow filter: {e}")
+            except ValueError as exception:
+                io.write(f"Cannot compile allow filter: {exception}")
                 return False
         elif deny_filter != "":
             try:
                 deny_filter_func = compile_filter(deny_filter)
                 filter_func = lambda f: not deny_filter_func(f)
-            except ValueError as e:
-                io.write(f"Cannot compile deny filter: {e}")
+            except ValueError as exception:
+                io.write(f"Cannot compile deny filter: {exception}")
                 return False
         else:
             filter_func = lambda f: False
@@ -60,7 +60,7 @@ class Module:
             incoming = l3_recv(1, interface=interface, sock=sock)
             if incoming is None:
                 continue
-            raw, frame, pkt = incoming
+            _, frame, pkt = incoming
             if pkt.dst == interface.ipv4_addr or pkt.src == interface.ipv4_addr:
                 continue
             if pkt.dst.public:
@@ -77,7 +77,7 @@ class Module:
                     pkt.dscp, pkt.ecn, pkt.ttl, pkt.identification, pkt.flags,
                     pkt.frag_offset)
             io.write(f"Forwarding {str(pkt)}")
-        io.write(f"Stopping IP forwarding.")
+        io.write("Stopping IP forwarding.")
 
     def stop(self):
         self.running = False
